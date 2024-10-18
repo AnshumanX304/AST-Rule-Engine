@@ -70,18 +70,26 @@ class Node {
   function evaluate_rule(node, data) {
     if (node.type === 'operand') {
       const { left, operator, right } = node.value;
-      const leftValue = data[left] || left;
-      let rightValue = data[right] || right;
+      const leftValue = data[left];
+      let rightValue = data[right] !== undefined ? data[right] : right;
   
+      if (leftValue === undefined) {
+        return false;
+      }
+
       if (typeof rightValue === 'string' && rightValue.startsWith("'") && rightValue.endsWith("'")) {
         rightValue = rightValue.slice(1, -1);
       }
+
+      const numLeftValue = Number(leftValue);
+      const numRightValue = Number(rightValue);
+      const useNumeric = !isNaN(numLeftValue) && !isNaN(numRightValue);
   
       switch (operator) {
-        case '>': return leftValue > rightValue;
-        case '<': return leftValue < rightValue;
-        case '>=': return leftValue >= rightValue;
-        case '<=': return leftValue <= rightValue;
+        case '>': return useNumeric ? numLeftValue > numRightValue : leftValue > rightValue;
+        case '<': return useNumeric ? numLeftValue < numRightValue : leftValue < rightValue;
+        case '>=': return useNumeric ? numLeftValue >= numRightValue : leftValue >= rightValue;
+        case '<=': return useNumeric ? numLeftValue <= numRightValue : leftValue <= rightValue;
         case '=': return leftValue == rightValue;
         default: throw new Error(`Unknown operator: ${operator}`);
       }
@@ -94,7 +102,6 @@ class Node {
   
     throw new Error('Invalid node type');
   }
-  
 
 
 function optimizeCombinedRules(node) {
