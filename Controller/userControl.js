@@ -95,6 +95,38 @@ class Node {
     throw new Error('Invalid node type');
   }
   
+
+
+function optimizeCombinedRules(node) {
+    if (!node) return null;
+    if (node.left) node.left = optimizeCombinedRules(node.left);
+    if (node.right) node.right = optimizeCombinedRules(node.right);
+    
+    if (node.type === 'operator' && node.value === 'AND') {
+      if (JSON.stringify(node.left) === JSON.stringify(node.right)) {
+        return node.left;
+      }
+    }
+  
+    return node;
+  }
+
+
+  function combine_rules(rules) {
+    if (rules.length === 0) return null;
+    if (rules.length === 1) return create_rule(rules[0]);
+  
+    const parsedRules = rules.map(create_rule);
+
+    let combinedRule = parsedRules[0];
+    for (let i = 1; i < parsedRules.length; i++) {
+      combinedRule = new Node('operator', 'AND', combinedRule, parsedRules[i]);
+    }
+
+    return optimizeCombinedRules(combinedRule);
+  }
+
+
   const userCtrl = {
     create_rule: async (req, res) => {
       try {
@@ -146,7 +178,32 @@ class Node {
           res.status(400).json({ success: false, msg: error.message });
           console.log(error);
         }
-    }
+    },
+
+    combine_rules: async (req, res) => {
+        try {
+          let { rules } = req.body;
+          
+          if (!Array.isArray(rules) || rules.length === 0) {
+            return res.status(400).json({
+              success: false,
+              msg: "Invalid input. Please provide a non-empty array of rule strings."
+            });
+          }
+    
+          const combinedAst = combine_rules(rules);
+    
+          res.status(200).json({
+            success: true,
+            msg: "Rules combined successfully!",
+            combinedRule: combinedAst ? combinedAst.toJSON() : null
+          });
+        }
+        catch (error) {
+          res.status(400).json({ success: false, msg: error.message });
+          console.log(error);
+        }
+      }
 
 
   };
